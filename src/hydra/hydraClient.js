@@ -10,6 +10,7 @@ import {
 } from 'react-admin';
 import isPlainObject from 'lodash.isplainobject';
 import fetchHydra from './fetchHydra';
+import {compact} from 'jsonld';
 
 class ReactAdminDocument {
   constructor(obj) {
@@ -296,7 +297,7 @@ export default ({entrypoint, resources = []}, httpClient = fetchHydra) => {
    *
    * @returns {Promise}
    */
-  const convertHydraResponseToReactAdminResponse = (
+  const convertHydraResponseToReactAdminResponse = async (
     type,
     resource,
     response,
@@ -304,11 +305,14 @@ export default ({entrypoint, resources = []}, httpClient = fetchHydra) => {
     switch (type) {
       case GET_LIST:
       case GET_MANY_REFERENCE:
-        // TODO: support other prefixes than "hydra:"
+        const compacted = await compact(response.json, {
+          '@vocab': 'http://www.w3.org/ns/hydra/core#',
+          member: {
+            '@container': '@set',
+          },
+        });
         return Promise.resolve(
-          response.json['hydra:member'].map(
-            transformJsonLdDocumentToReactAdminDocument,
-          ),
+          compacted.member.map(transformJsonLdDocumentToReactAdminDocument),
         )
           .then(data =>
             Promise.all(

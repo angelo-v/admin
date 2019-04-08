@@ -81,7 +81,41 @@ describe('fetch data from an hydra api', () => {
     mockHttpClient.mockReturnValue(
       Promise.resolve({
         json: {
+          '@context': {
+            hydra: 'http://www.w3.org/ns/hydra/core#',
+          },
           'hydra:member': [{'@id': 'books/5'}],
+        },
+      }),
+    );
+
+    await hydraClient({entrypoint: 'http://www.example.com'}, mockHttpClient)(
+      GET_LIST,
+      'books',
+      {
+        pagination: {page: 2},
+        sort: {field: 'id', order: 'ASC'},
+      },
+    ).then(() => {
+      expect(mockHttpClient.mock.calls[0][0].href).toBe(
+        'http://www.example.com/books?order%5Bid%5D=ASC&page=2',
+      );
+    });
+  });
+
+  test('fetch a get_list resource with different JSON-LD structure', async () => {
+    const mockHttpClient = jest.fn();
+    mockHttpClient.mockReturnValue(
+      Promise.resolve({
+        json: {
+          '@context': {
+            member: 'http://www.w3.org/ns/hydra/core#member',
+          },
+          '@graph': [
+            {
+              member: {'@id': 'books/5'},
+            },
+          ],
         },
       }),
     );
@@ -105,6 +139,9 @@ describe('fetch data from an hydra api', () => {
     mockHttpClient.mockReturnValue(
       Promise.resolve({
         json: {
+          '@context': {
+            hydra: 'http://www.w3.org/ns/hydra/core#',
+          },
           'hydra:member': [{'@id': 'books/5'}],
         },
       }),
